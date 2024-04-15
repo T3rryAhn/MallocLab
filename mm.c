@@ -70,7 +70,9 @@ team_t team = {
 // Given block ptr bp, compute address of next and previous blocks
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
-static char *heap_listp; // 처음에 쓸 큰 가용블록 힙을 만들어줌.
+
+static char *heap_listp;        // 처음에 쓸 큰 가용블록 힙을 만들어줌.
+static char *last_allocated;    // 마지막 할당 주소 저장하기.
 
 /*
  * 블록을 연결하는 함수
@@ -100,6 +102,8 @@ static void *coalesce(void *bp){
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0)); // 푸터를 뒤로 가서 사이즈 넣는다.
         bp = PREV_BLKP(bp); // 헤더는 그 전 블록으로 이동.
     }
+
+    last_allocated = bp;
     return bp; // 4개 케이스중에 적용된거로 bp 리턴
 }
 
@@ -143,6 +147,8 @@ int mm_init(void)
     { // extend heap을 통해 시작할 때 한번 heap을 늘려줌. 늘리는 양은 상관없음.
         return -1;
     }
+
+    last_allocated = heap_listp;
     return 0;
 }
 
@@ -152,10 +158,21 @@ int mm_init(void)
 static void *find_fit(size_t aszie)
 {
     void *bp;
-    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+
+    for (bp = last_allocated; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))   // 할당 주소부터 탐색 시작하기
     {
         if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
         {
+            last_allocated = bp;
+            return bp;
+        }
+    }
+
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))   //못찾았다면 처음부터 탐색해보기
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
+        {
+            last_allocated = bp;
             return bp;
         }
     }
