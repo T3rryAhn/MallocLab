@@ -71,34 +71,40 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 static char *heap_listp; // 처음에 쓸 큰 가용블록 힙을 만들어줌.
+static char *last_allocated;
 
 /*
  * 블록을 연결하는 함수
  */
-static void *coalesce(void *bp){
+static void *coalesce(void *bp)
+{
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp))); // 그전 블록으로 가서 그 블록의 가용여부를 확인
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp))); // 그 뒷 블록의 가용 여부 확인.
-    size_t size =  GET_SIZE(HDRP(bp)); // 지금 블록의 사이즈 확인
+    size_t size = GET_SIZE(HDRP(bp));                   // 지금 블록의 사이즈 확인
 
-    if (prev_alloc && next_alloc){ // case 1 - 이전과 다음 블록이 모두 할당 되어있는 경우, 현재 블록의 상태는 할당에서 가용으로 변경
+    if (prev_alloc && next_alloc)
+    {              // case 1 - 이전과 다음 블록이 모두 할당 되어있는 경우, 현재 블록의 상태는 할당에서 가용으로 변경
         return bp; // 이미 free에서 가용이 되어있으니 여기선 따로 free 할 필요 없음.
     }
-    else if (prev_alloc && !next_alloc){ // case2 - 이전 블록은 할당 상태, 다음 블록은 가용상태. 현재 블록은 다음 블록과 통합 됨.
+    else if (prev_alloc && !next_alloc)
+    {                                          // case2 - 이전 블록은 할당 상태, 다음 블록은 가용상태. 현재 블록은 다음 블록과 통합 됨.
         size += GET_SIZE(HDRP(NEXT_BLKP(bp))); // 다음 블록의 헤더를 보고 그 블록의 크기만큼 지금 블록의 사이즈에 추가한다.
-        PUT(HDRP(bp),PACK(size,0)); // 헤더 갱신(더 큰 크기로 PUT)
-        PUT(FTRP(bp), PACK(size,0)); // 푸터 갱신
+        PUT(HDRP(bp), PACK(size, 0));          // 헤더 갱신(더 큰 크기로 PUT)
+        PUT(FTRP(bp), PACK(size, 0));          // 푸터 갱신
     }
-    else if(!prev_alloc && next_alloc){ // case 3 - 이전 블록은 가용상태, 다음 블록은 할당 상태. 이전 블록은 현재 블록과 통합. 
-        size+= GET_SIZE(HDRP(PREV_BLKP(bp))); 
-        PUT(FTRP(bp), PACK(size,0));  // 푸터에 먼저 조정하려는 크기로 상태 변경한다.
-        PUT(HDRP(PREV_BLKP(bp)), PACK(size,0)); // 현재 헤더에서 그 앞블록의 헤더 위치로 이동한 다음에, 조정한 size를 넣는다.
-        bp = PREV_BLKP(bp); // bp를 그 앞블록의 헤더로 이동(늘린 블록의 헤더이니까.)
+    else if (!prev_alloc && next_alloc)
+    { // case 3 - 이전 블록은 가용상태, 다음 블록은 할당 상태. 이전 블록은 현재 블록과 통합.
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        PUT(FTRP(bp), PACK(size, 0));            // 푸터에 먼저 조정하려는 크기로 상태 변경한다.
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0)); // 현재 헤더에서 그 앞블록의 헤더 위치로 이동한 다음에, 조정한 size를 넣는다.
+        bp = PREV_BLKP(bp);                      // bp를 그 앞블록의 헤더로 이동(늘린 블록의 헤더이니까.)
     }
-    else { // case 4- 이전 블록과 다음 블록 모두 가용상태. 이전,현재,다음 3개의 블록 모두 하나의 가용 블록으로 통합.
-        size+= GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp))); // 이전 블록 헤더, 다음 블록 푸터 까지로 사이즈 늘리기
-        PUT(HDRP(PREV_BLKP(bp)), PACK(size,0)); // 헤더부터 앞으로 가서 사이즈 넣고
-        PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0)); // 푸터를 뒤로 가서 사이즈 넣는다.
-        bp = PREV_BLKP(bp); // 헤더는 그 전 블록으로 이동.
+    else
+    {                                                                          // case 4- 이전 블록과 다음 블록 모두 가용상태. 이전,현재,다음 3개의 블록 모두 하나의 가용 블록으로 통합.
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp))); // 이전 블록 헤더, 다음 블록 푸터 까지로 사이즈 늘리기
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));                               // 헤더부터 앞으로 가서 사이즈 넣고
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));                               // 푸터를 뒤로 가서 사이즈 넣는다.
+        bp = PREV_BLKP(bp);                                                    // 헤더는 그 전 블록으로 이동.
     }
     return bp; // 4개 케이스중에 적용된거로 bp 리턴
 }
@@ -109,7 +115,7 @@ static void *coalesce(void *bp){
 static void *extend_heap(size_t words)
 { // 새 가용 블록으로 힙 확장,
     char *bp;
-    size_t size; 
+    size_t size;
     size = (words % 2) ? (words + 1) * WSIZE : words * WSIZE;
 
     if ((long)(bp = mem_sbrk(size)) == -1)
@@ -143,6 +149,8 @@ int mm_init(void)
     { // extend heap을 통해 시작할 때 한번 heap을 늘려줌. 늘리는 양은 상관없음.
         return -1;
     }
+
+    last_allocated = heap_listp;
     return 0;
 }
 
@@ -153,20 +161,43 @@ static void *find_fit(size_t aszie)
 {
     void *bp;
     void *best = NULL;
-    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+
+    for (bp = last_allocated; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
     {
         if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
-        {   
-            if (best == NULL) {
+        {
+            if (best == NULL)
+            {
                 best = bp;
             }
-            else if (GET_SIZE(HDRP(best)) > GET_SIZE(HDRP(bp))) {
+            else if (GET_SIZE(HDRP(best)) > GET_SIZE(HDRP(bp)))
+            {
                 best = bp;
             }
-
         }
     }
-    if (best == NULL) {
+
+    if (best != NULL) {
+        return best;
+    }
+
+    for (bp = heap_listp; bp != last_allocated; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
+        {
+            if (best == NULL)
+            {
+                best = bp;
+            }
+            else if (GET_SIZE(HDRP(best)) > GET_SIZE(HDRP(bp)))
+            {
+                best = bp;
+            }
+        }
+    }
+
+    if (best == NULL)
+    {
         return NULL;
     }
     return best;
