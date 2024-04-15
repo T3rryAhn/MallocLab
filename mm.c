@@ -168,7 +168,7 @@ static void *find_fit(size_t aszie)
         }
     }
 
-    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))   //못찾았다면 처음부터 탐색해보기
+    for (bp = heap_listp; bp != last_allocated; bp = NEXT_BLKP(bp))   //못찾았다면 처음부터 last까지
     {
         if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
         {
