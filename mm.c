@@ -147,19 +147,29 @@ int mm_init(void)
 }
 
 /*
- * find fit  // first fit search
+ * find fit  // best fit search
  */
 static void *find_fit(size_t aszie)
 {
     void *bp;
+    void *best = NULL;
     for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
     {
         if (!GET_ALLOC(HDRP(bp)) && (aszie <= GET_SIZE(HDRP(bp))))
-        {
-            return bp;
+        {   
+            if (best == NULL) {
+                best = bp;
+            }
+            else if (GET_SIZE(HDRP(best)) > GET_SIZE(HDRP(bp))) {
+                best = bp;
+            }
+
         }
     }
-    return NULL;
+    if (best == NULL) {
+        return NULL;
+    }
+    return best;
 }
 
 /*
