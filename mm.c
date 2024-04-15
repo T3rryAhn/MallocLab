@@ -153,7 +153,7 @@ int mm_init(void)
 }
 
 /*
- * find fit  // first fit search
+ * find fit  // next_fit search
  */
 static void *find_fit(size_t aszie)
 {
