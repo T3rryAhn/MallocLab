@@ -48,8 +48,8 @@ team_t team = {
 
 #define WSIZE 4                 // word size (bytes)
 #define DSIZE 8                 // double word size (bytes)
-#define CHUNKSIZE (1 << 6)     // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB.
-#define INIT_CHUNKSIZE (1 << 2) // init chunksize 초기에 과한 청크 사이즈를 방지.
+#define CHUNKSIZE (1 << 6)      // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB.
+#define INIT_CHUNKSIZE (1 << 6) // init chunksize 초기에 과한 청크 사이즈를 방지.
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -348,20 +348,21 @@ void *mm_realloc(void *bp, size_t size)
     size = ALIGN(size + DSIZE); // 바꿀 size에 헤더 푸터 크기 추가
     size_t oldsize = GET_SIZE(HDRP(bp));
 
+    // 변경할 사이즈가 기존보다 작을때
+    if (oldsize >= size)
+    {
+        return bp;
+    }
+
     // if next block is free and
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t next_size = GET_SIZE(HDRP(NEXT_BLKP(bp)));
 
     if (!next_alloc && (oldsize + next_size >= size))
     {
-        remove_block(NEXT_BLKP(bp));                 // Remove the next block from the free list
-        PUT(HDRP(bp), PACK(oldsize + next_size, 1)); // Update current block size
-        PUT(FTRP(bp), PACK(oldsize + next_size, 1)); // Set new footer
-        oldsize += next_size;
-    }
-
-    if (oldsize >= size)
-    { // If the block is now big enough, return the current block
+        remove_block(NEXT_BLKP(bp));
+        PUT(HDRP(bp), PACK(oldsize + next_size, 1)); 
+        PUT(FTRP(bp), PACK(oldsize + next_size, 1)); 
         return bp;
     }
 
