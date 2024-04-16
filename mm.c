@@ -48,7 +48,8 @@ team_t team = {
 
 #define WSIZE 4             // word size (bytes)
 #define DSIZE 8             // double word size (bytes)
-#define CHUNKSIZE (1 << 6) // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB >> 2KB 로 수정 해봄.
+#define CHUNKSIZE (1 << 12) // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB >> 64 로 수정 해봄.
+#define INIT_CHUNKSIZE (1 << 6)     // init chunksize
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -118,7 +119,7 @@ int mm_init(void)
     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); // prologue footer
     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     // epilogue header
 
-    if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
+    if (extend_heap(INIT_CHUNKSIZE) == NULL)
     {
         return -1;
     }
