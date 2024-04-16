@@ -47,31 +47,22 @@ team_t team = {
  * macro
  */
 
-#define WSIZE 4  // word size (bytes)
-#define DSIZE 8  // double word size (bytes)
-#define CHUNKSIZE \
-    (1 << 6)  // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가
-              // 4KB.
-#define INIT_CHUNKSIZE \
-    (1 << 6)  // init chunksize 초기에 과한 청크 사이즈를 방지.
+#define WSIZE 4             // word size (bytes)
+#define DSIZE 8             // double word size (bytes)
+#define CHUNKSIZE (1 << 6)  // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB.
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 // pack a size and allocated bit into a word
-#define PACK(size, alloc) \
-    ((size) | (alloc))  // size + block available. OR 연산으로 헤더에 넣을
-                        // 정보를 만듬 사이즈 + 가용여부(끝 3자리)
+#define PACK(size, alloc) ((size) | (alloc))  // size + block available. OR 연산으로 헤더에 넣을 정보를 만듬 사이즈 + 가용여부(끝 3자리).
 
 // Read and write a word at address p
 #define GET(p) (*(unsigned int *)(p))
 #define PUT(p, val) (*(unsigned int *)(p) = (int)(val))
 
 // Read the size and allocated fields from address p
-#define GET_SIZE(p) \
-    (GET(p) & ~0x7)  // 00000111 의 보수(~) 를 취해서 11111000 을 가져와 AND
-                     // 연산을 통해 블록 사이즈만 가져오겠다.
-#define GET_ALLOC(p) \
-    (GET(p) & 0x1)  // 00000001 과 AND 연을 통해 헤더에서 가용여부만 가져오겠다.
+#define GET_SIZE(p) (GET(p) & ~0x7)  // 00000111 의 보수(~) 를 취해서 11111000 을 가져와 AND 연산을 통해 블록 사이즈만 가져오겠다.
+#define GET_ALLOC(p) (GET(p) & 0x1)  // 00000001 과 AND 연을 통해 헤더에서 가용여부만 가져오겠다.
 
 // Given block ptr bp, compute address of its header and footer
 #define HDRP(bp) ((char *)(bp) - WSIZE)
@@ -81,9 +72,7 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
-// 가용리스트 명시적 주소 읽기
-// prev/next 블록이 가리키는 곳으로 가는 이중포인터 //byte 형식의 주솟값을
-// 가르키는 포인터로 변환해서 바이트 단위로 연산하겠다.
+// 가용리스트 명시적 주소 읽기 prev/next 블록이 가리키는 곳으로 가는 이중포인터 //byte 형식의 주솟값을 가르키는 포인터로 변환해서 바이트 단위로 연산하겠다.
 #define PREV_FREE_P(bp) (*(char **)(bp))
 #define NEXT_FREE_P(bp) (*(char **)(bp + WSIZE))
 
@@ -291,7 +280,7 @@ void *mm_malloc(size_t size) {
 }
 
 /*
- * mm_free - Freeing a block does nothing.
+ * mm_free
  */
 void mm_free(void *bp) {
     size_t size = GET_SIZE(HDRP(bp));
