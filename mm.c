@@ -49,7 +49,7 @@ team_t team = {
 
 #define WSIZE 4             // word size (bytes)
 #define DSIZE 8             // double word size (bytes)
-#define CHUNKSIZE (1 << 6)  // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB.
+#define CHUNKSIZE (1 << 12)  // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB.
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -96,6 +96,7 @@ static void add_block_to_freelist(void *bp);
 static void remove_block(void *bp);
 
 int find_list_index(size_t size);
+int find_next_power(int x);
 
 /*
  * mm_init - initialize the malloc package.
@@ -248,6 +249,19 @@ static void place(void *bp, size_t asize) {
     }
 }
 
+// x 보다 한단계 더큰 2의 제곱수로 올림.
+int find_next_power(int x) {
+    if (x < 1) {
+        return 1;
+    }
+
+    int power = 1;
+    while (power < x) {
+        power *= 2;
+    }
+    return power;
+}
+
 /*
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
@@ -258,6 +272,10 @@ void *mm_malloc(size_t size) {
     char *bp;
 
     if (size == 0) return NULL;
+
+    if (size <= CHUNKSIZE) {
+        size = find_next_power(size);
+    }
 
     if (size <= DSIZE) {
         asize = 2 * DSIZE;
