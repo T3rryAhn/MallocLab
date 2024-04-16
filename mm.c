@@ -229,12 +229,11 @@ static void remove_block(void *bp)
 }
 
 /*
- * find fit  // best fit search
+ * find fit  // first fit search
  */
 static void *find_fit(size_t asize)
 {
-    void *bp;
-    void *best = NULL;
+    void *bp = NULL;
     int index = find_list_index(asize);
 
     while (index < SIZE_NUM)
@@ -242,23 +241,16 @@ static void *find_fit(size_t asize)
         for (bp = seg_free_list[index]; bp != NULL; bp = NEXT_FREE_P(bp))
         {
             size_t current_size = GET_SIZE(HDRP(bp));
-            if (asize == current_size)
-            { // perfect match
-                best = bp;
-                return best;
+            if (asize <= current_size)
+            { 
+                return bp;
             }
-            else if (asize < current_size) // best match
-            {
-                if (best == NULL || GET_SIZE(best) > GET_SIZE(bp))
-                {
-                    best = bp;
-                }
-            }
+
         }
         index++;
     }
 
-    return best;
+    return NULL;
 }
 
 /*
