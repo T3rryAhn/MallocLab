@@ -91,6 +91,7 @@ static void *coalesce(void *bp);
 static void place(void *bp, size_t asize);
 static void add_block_to_freelist(void *bp);
 static void remove_block(void *bp);
+
 /*
  * mm_init - initialize the malloc package.
  */
@@ -193,19 +194,26 @@ static void remove_block(void *bp) {
 
 
 /*
- * find fit  // first fit search
+ * find fit  // best fit search
  */
 static void *find_fit(size_t aszie)
 {
     void *bp;
+    void *best = NULL;
     for (bp = free_listp; NEXT_FREE_P(bp) != NULL; bp = NEXT_FREE_P(bp))
-    {
-        if (aszie <= GET_SIZE(HDRP(bp)))
-        {
-            return bp;
+    {   
+        if (aszie == GET_SIZE(HDRP(bp))){
+            best = bp;
+            return best;
+        }
+        else if (aszie < GET_SIZE(HDRP(bp)))
+        {   
+            if (best == NULL || GET_SIZE(best) > GET_SIZE(bp)) {
+                best = bp;
+            }
         }
     }
-    return NULL;
+    return best;
 }
 
 /*
@@ -217,18 +225,18 @@ static void place(void *bp, size_t asize)
     remove_block(bp);
 
     if ((csize - asize) >= (3 * DSIZE))
-    {                                          // 현재 블록 사이즈안에서 asize를 넣어도 3*DSIZE(헤더와 푸터를 감안한 최소 사이즈)만큼 남냐? 남으면 다른 data를 넣을 수 있으니까.
-        PUT(HDRP(bp), PACK(asize, 1));         // 헤더위치에 asize만큼 넣고 1(alloc)로 상태변환. 원래 헤더 사이즈에서 지금 넣으려고 하는 사이즈(asize)로 갱신.(자르는 효과)
-        PUT(FTRP(bp), PACK(asize, 1));         // 푸터 위치도 변경.
-        bp = NEXT_BLKP(bp);                    // regular block만큼 하나 이동해서 bp 위치 갱신.
-        PUT(HDRP(bp), PACK(csize - asize, 0)); // 나머지 블록은(csize-asize) 다 가용하다(0)하다라는걸 다음 헤더에 표시.
-        PUT(FTRP(bp), PACK(csize - asize, 0)); // 푸터에도 표시.
+    {                                          
+        PUT(HDRP(bp), PACK(asize, 1));         
+        PUT(FTRP(bp), PACK(asize, 1));         
+        bp = NEXT_BLKP(bp);                    
+        PUT(HDRP(bp), PACK(csize - asize, 0)); 
+        PUT(FTRP(bp), PACK(csize - asize, 0)); 
 
         add_block_to_freelist(bp);              // 가용 리스트 표식
     }
     else
     {
-        PUT(HDRP(bp), PACK(csize, 1)); // 위의 조건이 아니면 asize만 csize에 들어갈 수 있으니까 내가 다 먹는다.
+        PUT(HDRP(bp), PACK(csize, 1)); 
         PUT(FTRP(bp), PACK(csize, 1));
     }
 }
