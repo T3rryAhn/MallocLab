@@ -48,7 +48,7 @@ team_t team = {
 
 #define WSIZE 4             // word size (bytes)
 #define DSIZE 8             // double word size (bytes)
-#define CHUNKSIZE (1 << 12) // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB
+#define CHUNKSIZE (1 << 6) // increase heap size to 4KB (4096 bytes) 메모리 페이지 크기가 4KB >> 2KB 로 수정 해봄.
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
