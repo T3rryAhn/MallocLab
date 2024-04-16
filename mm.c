@@ -209,23 +209,22 @@ static void *find_fit(size_t aszie)
 }
 
 /*
- * place
+ * place 가용블록에 데이터를 넣고 필요하다면 나머지 부분이 최소 블록크기와 같거나 크면 분할하는 함수
  */
 static void place(void *bp, size_t asize)
-{ // 들어갈 위치를 포인터로 받는다.(find fit에서 찾는 bp) 크기는 asize로 받음.
-    // 요청한 블록을 가용 블록의 시작 부분에 배치, 나머지 부분의 크기가 최소 블록크기와 같거나 큰 경우에만 분할하는 함수.
-    size_t csize = GET_SIZE(HDRP(bp)); // 현재 있는 블록의 사이즈.
+{
+    size_t csize = GET_SIZE(HDRP(bp));
     remove_block(bp);
 
     if ((csize - asize) >= (3 * DSIZE))
-    {                                          // 현재 블록 사이즈안에서 asize를 넣어도 2*DSIZE(헤더와 푸터를 감안한 최소 사이즈)만큼 남냐? 남으면 다른 data를 넣을 수 있으니까.
+    {                                          // 현재 블록 사이즈안에서 asize를 넣어도 3*DSIZE(헤더와 푸터를 감안한 최소 사이즈)만큼 남냐? 남으면 다른 data를 넣을 수 있으니까.
         PUT(HDRP(bp), PACK(asize, 1));         // 헤더위치에 asize만큼 넣고 1(alloc)로 상태변환. 원래 헤더 사이즈에서 지금 넣으려고 하는 사이즈(asize)로 갱신.(자르는 효과)
         PUT(FTRP(bp), PACK(asize, 1));         // 푸터 위치도 변경.
         bp = NEXT_BLKP(bp);                    // regular block만큼 하나 이동해서 bp 위치 갱신.
         PUT(HDRP(bp), PACK(csize - asize, 0)); // 나머지 블록은(csize-asize) 다 가용하다(0)하다라는걸 다음 헤더에 표시.
         PUT(FTRP(bp), PACK(csize - asize, 0)); // 푸터에도 표시.
 
-        add_block_to_freelist(bp);
+        add_block_to_freelist(bp);              // 가용 리스트 표식
     }
     else
     {
@@ -249,7 +248,7 @@ void *mm_malloc(size_t size)
 
     if (size <= DSIZE)
     {
-        asize = 3 * DSIZE;
+        asize = 2 * DSIZE;
     }
     else
     {
