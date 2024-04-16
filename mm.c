@@ -202,11 +202,12 @@ static void *find_fit(size_t aszie)
     void *best = NULL;
     for (bp = free_listp; NEXT_FREE_P(bp) != NULL; bp = NEXT_FREE_P(bp))
     {   
-        if (aszie == GET_SIZE(HDRP(bp))){
+        size_t current_size = GET_SIZE(HDRP(bp));
+        if (aszie == current_size){                             //perfect match
             best = bp;
             return best;
         }
-        else if (aszie < GET_SIZE(HDRP(bp)))
+        else if (aszie < current_size)                          //best match
         {   
             if (best == NULL || GET_SIZE(best) > GET_SIZE(bp)) {
                 best = bp;
