@@ -92,7 +92,6 @@ team_t team = {
 
 // list
 static char *heap_listp;  // 힙 포인터
-static char *free_listp;  // 가용리스트 첫 위치 포인터
 void *seg_free_list[SIZE_NUM];
 
 // function prototype
